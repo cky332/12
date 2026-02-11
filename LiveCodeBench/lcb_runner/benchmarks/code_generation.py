@@ -121,11 +121,35 @@ class CodeGenerationProblem:
         }
 
 
+def _load_dataset_compat(repo_id, split="test", **kwargs):
+    """Load dataset with compatibility for both old and new versions of the datasets library.
+    datasets >= 3.0 no longer supports custom loading scripts, so we fall back to
+    downloading parquet files directly via huggingface_hub."""
+    try:
+        return load_dataset(repo_id, split=split, **kwargs)
+    except (RuntimeError, TypeError, ValueError):
+        from huggingface_hub import HfApi
+        api = HfApi()
+        # List all parquet files in the repo
+        files = api.list_repo_files(repo_id, repo_type="dataset")
+        parquet_files = [f for f in files if f.endswith(".parquet")]
+        if not parquet_files:
+            raise RuntimeError(f"No parquet files found in {repo_id}")
+        # Build remote URLs for the parquet files
+        data_files = [f"hf://datasets/{repo_id}/{f}" for f in parquet_files]
+        return load_dataset("parquet", data_files=data_files, split=split)
+
+
 def load_code_generation_dataset(release_version="release_v1", start_date=None, end_date=None) -> list[CodeGenerationProblem]:
-    dataset = load_dataset("livecodebench/code_generation_lite", split="test")
-    # Filter by version_tag since custom dataset scripts are no longer supported
-    version_matched = [p for p in dataset if p.get("version_tag", None) == release_version or release_version is None]
-    dataset = version_matched if version_matched else dataset
+    try:
+        # datasets < 3.0: supports trust_remote_code and version_tag
+        dataset = load_dataset("livecodebench/code_generation_lite", split="test", version_tag=release_version, trust_remote_code=True)
+    except (RuntimeError, TypeError, ValueError):
+        # datasets >= 3.0: loading scripts no longer supported, load parquet directly
+        dataset = _load_dataset_compat("livecodebench/code_generation_lite", split="test")
+        # Filter by version_tag manually since custom script params are unavailable
+        version_matched = [p for p in dataset if p.get("version_tag", None) == release_version or release_version is None]
+        dataset = version_matched if version_matched else list(dataset)
     dataset = [CodeGenerationProblem(**p) for p in dataset]  # type: ignore
     if start_date is not None:
         p_start_date = datetime.strptime(start_date, "%Y-%m-%d")
