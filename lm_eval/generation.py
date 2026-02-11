@@ -55,7 +55,7 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
         "temperature": args.temperature,
         "top_p": args.top_p,
         "top_k": args.top_k,
-        "max_length": args.max_length_generation,
+        "max_new_tokens": args.max_length_generation,
     }
     if task.stop_words:
         if tokenizer.eos_token:
