@@ -124,20 +124,46 @@ class CodeGenerationProblem:
 def _load_dataset_compat(repo_id, split="test", **kwargs):
     """Load dataset with compatibility for both old and new versions of the datasets library.
     datasets >= 3.0 no longer supports custom loading scripts, so we fall back to
-    downloading parquet files directly via huggingface_hub."""
+    downloading the repo and loading data files directly."""
+    import os
     try:
         return load_dataset(repo_id, split=split, **kwargs)
     except (RuntimeError, TypeError, ValueError):
-        from huggingface_hub import HfApi
-        api = HfApi()
-        # List all parquet files in the repo
-        files = api.list_repo_files(repo_id, repo_type="dataset")
-        parquet_files = [f for f in files if f.endswith(".parquet")]
-        if not parquet_files:
-            raise RuntimeError(f"No parquet files found in {repo_id}")
-        # Build remote URLs for the parquet files
-        data_files = [f"hf://datasets/{repo_id}/{f}" for f in parquet_files]
-        return load_dataset("parquet", data_files=data_files, split=split)
+        pass
+
+    # Fallback: download the repo and find data files
+    from huggingface_hub import snapshot_download
+    local_dir = snapshot_download(repo_id, repo_type="dataset")
+
+    # Search for data files in common formats
+    data_extensions = {
+        "json": "json", "jsonl": "json",
+        "parquet": "parquet",
+        "csv": "csv",
+        "arrow": "arrow",
+    }
+    # Look for data files in root and data/ subdirectory
+    search_dirs = [local_dir, os.path.join(local_dir, "data")]
+    for search_dir in search_dirs:
+        if not os.path.isdir(search_dir):
+            continue
+        for fname in sorted(os.listdir(search_dir)):
+            ext = fname.rsplit(".", 1)[-1].lower() if "." in fname else ""
+            if ext in data_extensions:
+                fpath = os.path.join(search_dir, fname)
+                fmt = data_extensions[ext]
+                try:
+                    return load_dataset(fmt, data_files=fpath, split=split)
+                except Exception:
+                    continue
+
+    raise RuntimeError(
+        f"Cannot load dataset '{repo_id}' with datasets >= 3.0.\n"
+        f"This dataset only has a loading script and no standard data files.\n"
+        f"Please downgrade the datasets library:\n"
+        f"    pip install 'datasets<3.0'\n"
+        f"For example: pip install datasets==2.21.0"
+    )
 
 
 def load_code_generation_dataset(release_version="release_v1", start_date=None, end_date=None) -> list[CodeGenerationProblem]:
