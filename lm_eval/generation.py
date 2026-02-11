@@ -103,7 +103,9 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
 
     # do not confuse args.batch_size, which is actually the num_return_sequences
     ds_loader = DataLoader(ds_tokenized, batch_size=1)
-    model = model.to(accelerator.device)
+    # Skip .to() if model is already dispatched across devices (e.g. device_map="auto")
+    if not getattr(model, "hf_device_map", None):
+        model = model.to(accelerator.device)
 
     ds_loader = accelerator.prepare(ds_loader)
 
