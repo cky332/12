@@ -1,0 +1,59 @@
+name: Import LiveCodeBench into subfolder
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "LiveCodeBench repo ref (branch/tag/commit)"
+        required: false
+        default: "main"
+      target_folder:
+        description: "Folder to place imported files"
+        required: false
+        default: "LiveCodeBench"
+
+permissions:
+  contents: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone source repo and copy into subfolder
+        run: |
+          set -euxo pipefail
+
+          SRC_REPO="https://github.com/LiveCodeBench/LiveCodeBench.git"
+          SRC_REF="${{ github.event.inputs.source_ref }}"
+          DEST="${{ github.event.inputs.target_folder }}"
+
+          # 清空并重建目标目录（保证重复运行时能更新）
+          rm -rf "$DEST"
+          mkdir -p "$DEST"
+
+          git clone --depth 1 --branch "$SRC_REF" "$SRC_REPO" /tmp/LiveCodeBench-src
+          rm -rf /tmp/LiveCodeBench-src/.git
+
+          rsync -a --delete /tmp/LiveCodeBench-src/ "$DEST/"
+
+      - name: Commit and push changes
+        run: |
+          set -euxo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "${{ github.event.inputs.target_folder }}"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "Import LiveCodeBench into ${{ github.event.inputs.target_folder }}/"
+          git push
