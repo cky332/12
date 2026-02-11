@@ -37,6 +37,12 @@ def parse_args():
         help="Use the token generated when running `huggingface-cli login` (necessary for private model).",
     )
     parser.add_argument(
+        "--device_map",
+        type=str,
+        default=None,
+        help="Device map for model parallelism, e.g. 'auto' to automatically split model across GPUs.",
+    )
+    parser.add_argument(
         "--trust_remote_code",
         action="store_true",
         help="Use a model with custom code, this requires executing code by the author of the model.",
@@ -230,7 +236,7 @@ def main():
             args.model,
             revision=args.revision,
             trust_remote_code=args.trust_remote_code,
-            use_auth_token=args.use_auth_token,
+            token=args.use_auth_token,
             truncation_side="left",
             padding_side="right",
         )
@@ -275,7 +281,8 @@ def main():
                         revision=args.revision,
                         torch_dtype=dict_precisions[args.precision],
                         trust_remote_code=args.trust_remote_code,
-                        use_auth_token=args.use_auth_token,
+                        token=args.use_auth_token,
+                        device_map=args.device_map,
                     )
                 else:
                     model = AutoModelForCausalLM.from_pretrained(
@@ -298,7 +305,8 @@ def main():
                 revision=args.revision,
                 torch_dtype=dict_precisions[args.precision],
                 trust_remote_code=args.trust_remote_code,
-                use_auth_token=args.use_auth_token,
+                token=args.use_auth_token,
+                device_map=args.device_map,
             )
         else:
             model = AutoModelForCausalLM.from_pretrained(
