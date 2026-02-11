@@ -1,7 +1,8 @@
 from pprint import pprint
 
 from . import (apps, codexglue_code_to_text, codexglue_text_to_text, conala,
-               concode, ds1000, gsm, humaneval, mbpp, multiple, code_evaluation_prompts)
+               concode, ds1000, gsm, humaneval, mbpp, multiple, code_evaluation_prompts,
+               livecodebench)
 
 TASK_REGISTRY = {
     **apps.create_all_tasks(),
@@ -16,6 +17,7 @@ TASK_REGISTRY = {
     "mbpp": mbpp.MBPP,
     **gsm.create_all_tasks(),
     "code_evaluation_prompts": code_evaluation_prompts.CEP,
+    "livecodebench": livecodebench.LiveCodeBench,
 }
 
 ALL_TASKS = sorted(list(TASK_REGISTRY))

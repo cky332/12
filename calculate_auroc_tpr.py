@@ -31,10 +31,17 @@ def parse_args():
         default="outputs",
         help="File name of machine code detection results",
     )
+    parser.add_argument(
+        "--human_task",
+        choices=ALL_TASKS,
+        default=None,
+        help=f"Task name for human code results if different from --task (e.g., use humaneval human code as negative samples for livecodebench)",
+    )
     return parser.parse_args()
 
 def get_roc_aur(human_z, machine_z):
-    assert len(human_z) == len(machine_z)
+    # human and machine z-score lists can have different lengths
+    # (e.g., when using cross-task human code as negative samples)
 
     baseline_z_scores = np.array(human_z)
     watermark_z_scores = np.array(machine_z)
@@ -74,7 +81,9 @@ def main():
     machine_results = json.load(open(args.machine_fname))
 
     # AUROC
-    human_z = [r['z_score'] for r in human_results[args.task]['watermark_detection']['raw_detection_results']]
+    # human_task defaults to same as --task, but can be different (e.g., humaneval human code for livecodebench)
+    human_task = args.human_task if args.human_task else args.task
+    human_z = [r['z_score'] for r in human_results[human_task]['watermark_detection']['raw_detection_results']]
     machine_z = [r['z_score'] for r in machine_results[args.task]['watermark_detection']['raw_detection_results']]
     roc_auc, fpr, tpr, _ = get_roc_aur(human_z, machine_z)
     print(roc_auc)
