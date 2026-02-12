@@ -4,7 +4,7 @@ from collections import defaultdict
 import torch
 import tqdm 
 import math
-import pdb
+
 
 
 class SweetLogitsProcessor(WatermarkLogitsProcessor):
@@ -64,11 +64,10 @@ class SweetDetector(WatermarkDetector):
             score_dict["invalid"] = True
             return score_dict
 
-        try:
-            assert len(entropy) == len(input_ids) # eos id나 pad id 있으면 어쩌지?
-        except AssertionError:
-            print("len(entropy) != len(input_ids)")
-            pdb.set_trace()
+        if len(entropy) != len(input_ids):
+            print(f"Warning: len(entropy)={len(entropy)} != len(input_ids)={len(input_ids)}")
+            score_dict["invalid"] = True
+            return score_dict
 
         num_tokens_scored = num_tokens_generated - len(
             [e for e in entropy[prefix_len:] if e <= self.entropy_threshold]

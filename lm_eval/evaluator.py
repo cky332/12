@@ -11,7 +11,7 @@ from lm_eval.utils import calculate_entropy
 from watermark import WatermarkDetector
 from sweet import SweetDetector
 from exp import EXPDetector
-import pdb
+
 
 _WARNING = """
 ################################################################################
@@ -108,24 +108,19 @@ class Evaluator:
                     prefix_len = len(tokenized_prefix)
 
                     # if the prompt is not part of generation
-                    try:
-                        assert gen.startswith(prefix)
-                    except AssertionError:
-                        print(f"{idx}, {idx2}")
-                        pdb.set_trace()
+                    if not gen.startswith(prefix):
+                        print(f"Warning: generation {idx},{idx2} does not start with prompt prefix, skipping.")
+                        continue
 
                     tokenized_text = tokenize(gen)['input_ids'].squeeze()
 
                     # if tokenized are not same
-                    try:
-                        assert torch.equal(tokenized_text[:prefix_len],tokenized_prefix), "Tokenized prefix must be a prefix of the tokenized text"
-                    except AssertionError:
-                        print(f"{idx}, {idx2}")
+                    if not torch.equal(tokenized_text[:prefix_len], tokenized_prefix):
+                        print(f"Warning: tokenization mismatch at {idx},{idx2}")
                         # tokenizing issue.. check at least the lens are same
-                        if len(tokenized_text[:prefix_len]) == len(tokenized_prefix):
-                            pass
-                        else:
-                            pdb.set_trace()
+                        if len(tokenized_text[:prefix_len]) != len(tokenized_prefix):
+                            print(f"Warning: tokenized length mismatch at {idx},{idx2}, skipping.")
+                            continue
 
                     # if len of generation is 0, check next genertion
                     if len(tokenized_text) - prefix_len == 0:
