@@ -137,8 +137,11 @@ class Evaluator:
 
                     # entropy calculation
                     if self.args.sweet:
-                        self.model = self.model.to(self.accelerator.device)
-                        entropy = calculate_entropy(self.model, tokenized_text.to(self.accelerator.device))
+                        if not getattr(self.model, "hf_device_map", None):
+                            self.model = self.model.to(self.accelerator.device)
+                        # Send input to the device of the model's first parameter
+                        input_device = next(self.model.parameters()).device
+                        entropy = calculate_entropy(self.model, tokenized_text.to(input_device))
                         
                         # we need to shift entropy to the right, so the first item is dummy
                         entropy = [0] + entropy[:-1]
