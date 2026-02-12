@@ -136,7 +136,7 @@ class Evaluator:
                         n_detection += 1
 
                     # entropy calculation
-                    if self.args.sweet:
+                    if getattr(self.args, 'sweet', False):
                         if not getattr(self.model, "hf_device_map", None):
                             self.model = self.model.to(self.accelerator.device)
                         # Send input to the device of the model's first parameter
@@ -149,7 +149,7 @@ class Evaluator:
                         ent_list += entropy[prefix_len:]
 
                     # WLLM detector
-                    if self.args.wllm:
+                    if getattr(self.args, 'wllm', False):
                         detection_result = watermark_detector.detect( # no batch
                             tokenized_text=tokenized_text,
                             tokenized_prefix=tokenized_prefix,
@@ -159,7 +159,7 @@ class Evaluator:
                             detection_results.append(detection_result)
 
                     # SWEET detector
-                    elif self.args.sweet:
+                    elif getattr(self.args, 'sweet', False):
                         detection_result = watermark_detector.detect( # no batch
                             tokenized_text=tokenized_text,
                             tokenized_prefix=tokenized_prefix,
@@ -170,7 +170,7 @@ class Evaluator:
                             detection_results.append(detection_result)
 
                     # EXP-edit detector
-                    elif self.args.exp:
+                    elif getattr(self.args, 'exp', False):
                         detection_result = watermark_detector.detect( # no batch
                             generated_tokens=tokenized_text[prefix_len:],
                             n_runs=self.args.n_runs,
@@ -240,20 +240,20 @@ class Evaluator:
         # load watermark detector
         watermark_detector = None
 
-        if self.args.wllm:
+        if getattr(self.args, 'wllm', False):
             watermark_detector = WatermarkDetector(vocab=list(self.tokenizer.get_vocab().values()),
                                         gamma=self.args.gamma,
                                         tokenizer=self.tokenizer,
                                         z_threshold=self.args.detection_z_threshold)
-        
-        elif self.args.sweet:
+
+        elif getattr(self.args, 'sweet', False):
             watermark_detector = SweetDetector(vocab=list(self.tokenizer.get_vocab().values()),
                                         gamma=self.args.gamma,
                                         tokenizer=self.tokenizer,
                                         z_threshold=self.args.detection_z_threshold,
                                         entropy_threshold=self.args.entropy_threshold)
-        
-        elif self.args.exp:
+
+        elif getattr(self.args, 'exp', False):
             watermark_detector = EXPDetector(vocab=list(self.tokenizer.get_vocab().values()),
                                         n=self.args.key_length,
                                         detection_p_threshold=self.args.detection_p_threshold,

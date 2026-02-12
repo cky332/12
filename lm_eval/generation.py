@@ -64,14 +64,14 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
             [EndOfFunctionCriteria(0, task.stop_words, tokenizer)]
         )
 
-    if args.wllm:
+    if getattr(args, 'wllm', False):
         watermark_processor = WatermarkLogitsProcessor(vocab=list(tokenizer.get_vocab().values()),
                                                         gamma=args.gamma,
                                                         delta=args.delta)
         gen_kwargs["logits_processor"] = LogitsProcessorList(
             [watermark_processor]
         )
-    elif args.sweet:
+    elif getattr(args, 'sweet', False):
         sweet_processor = SweetLogitsProcessor(vocab=list(tokenizer.get_vocab().values()),
                                                         gamma=args.gamma,
                                                         delta=args.delta,
@@ -79,7 +79,7 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
         gen_kwargs["logits_processor"] = LogitsProcessorList(
             [sweet_processor]
         )
-    elif args.rdfw or args.srdfw:
+    elif getattr(args, 'rdfw', False) or getattr(args, 'srdfw', False):
         exp_processor = EXPLogitsProcessor(vocab=list(tokenizer.get_vocab().values()),
                                                         n=args.key_length,
                                                         temperature=args.temperature, # consider the temperature here because after RDFW, the token to be generated is fixed
