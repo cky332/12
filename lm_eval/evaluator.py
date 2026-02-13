@@ -10,7 +10,6 @@ from lm_eval.generation import parallel_generations
 from lm_eval.utils import calculate_entropy
 from watermark import WatermarkDetector
 from sweet import SweetDetector
-from exp import EXPDetector
 
 
 _WARNING = """
@@ -249,6 +248,7 @@ class Evaluator:
                                         entropy_threshold=self.args.entropy_threshold)
 
         elif getattr(self.args, 'exp', False):
+            from exp import EXPDetector
             watermark_detector = EXPDetector(vocab=list(self.tokenizer.get_vocab().values()),
                                         n=self.args.key_length,
                                         detection_p_threshold=self.args.detection_p_threshold,
