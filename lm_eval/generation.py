@@ -79,7 +79,7 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
         gen_kwargs["logits_processor"] = LogitsProcessorList(
             [sweet_processor]
         )
-    elif getattr(args, 'rdfw', False) or getattr(args, 'srdfw', False):
+    elif getattr(args, 'exp', False):
         exp_processor = EXPLogitsProcessor(vocab=list(tokenizer.get_vocab().values()),
                                                         n=args.key_length,
                                                         temperature=args.temperature, # consider the temperature here because after RDFW, the token to be generated is fixed
