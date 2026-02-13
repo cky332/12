@@ -271,6 +271,7 @@ def main():
             "Choose only one between 1) detecting generated code vs 2) human code"
 
         # here we don't generate code but only evaluate previously computed generations
+        model = None
         if accelerator.is_main_process:
             print("evaluation only mode")
 
@@ -290,9 +291,7 @@ def main():
                         cache_dir=args.model_path,
                         torch_dtype="auto",
                     )
-            else:
-                model = None
-        
+
         evaluator = Evaluator(accelerator, model, tokenizer, args)
         results[task_name] = evaluator.evaluate(task_name)
 
@@ -341,8 +340,8 @@ def main():
         if accelerator.is_main_process:
             print(dumped)
 
-        with open(args.metric_output_path, "w") as f:
-            f.write(dumped)
+            with open(args.metric_output_path, "w") as f:
+                f.write(dumped)
 
 
 if __name__ == "__main__":
