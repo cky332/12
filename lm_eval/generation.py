@@ -7,7 +7,6 @@ from transformers import StoppingCriteria, StoppingCriteriaList, LogitsProcessor
 
 from watermark import WatermarkLogitsProcessor
 from sweet import SweetLogitsProcessor
-from exp import EXPLogitsProcessor
 from lm_eval.utils import TokenizedDataset, complete_code
 
 class EndOfFunctionCriteria(StoppingCriteria):
@@ -80,6 +79,7 @@ def parallel_generations(task, dataset, accelerator, model, tokenizer, n_tasks, 
             [sweet_processor]
         )
     elif getattr(args, 'exp', False):
+        from exp import EXPLogitsProcessor
         exp_processor = EXPLogitsProcessor(vocab=list(tokenizer.get_vocab().values()),
                                                         n=args.key_length,
                                                         temperature=args.temperature, # consider the temperature here because after RDFW, the token to be generated is fixed
